@@ -1,0 +1,12 @@
+name = My Friends
+description = "Create a block for my friends."
+package = "User Relationships"
+dependencies[] = user_relationships
+core = 7.x
+
+
+version = "7.x-1.0"
+core = "7.x"
+project = "user_relationships"
+datestamp = "1439243341"
+author = "echo Lin"

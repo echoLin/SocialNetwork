@@ -1,0 +1,57 @@
+<?php
+/**
+ * @file
+ * Create a block for friend recommendation
+ * @author Wang Xiaoli (creator)
+ */
+
+/**
+ * Implements hook_block_info().
+ */
+function friend_myfriends_block_info() {
+  global $user;
+  
+  $blocks['my_friends'] = array (
+        'info' => t('My Friends'),
+        'cache' => DRUPAL_NO_CACHE,
+  );
+  $blocks['my_friends']['properties']['administrative'] = TRUE;
+  return $blocks;
+}
+
+/**
+ * Implements hook_block_view().
+ */
+function friend_myfriends_block_view($delta = '') {
+    global $user;
+
+  $block = array();
+
+  if ($delta == 'my_friends') {
+      if (user_access('access content')) {
+        // Perform database queries to gather users who are not friends of the current user.
+        $uid = $user->uid;
+        $friends = user_relationships_load(array('requester_id'=>$uid, 'approved'=>1));
+        // Suggest random users when the user has no friends
+        if(count($friends)==0){
+            return $block;
+        }
+    
+        foreach($friends as $friend){
+            $finalFriendList[] = $friend->requestee_id;
+        }
+        
+        if (!empty($finalFriendList)) {
+            $items = user_load_multiple($finalFriendList);
+            $html = '<ul>';
+            foreach($items as $item) {
+               $html .= '<li><a href="' . url("user/{$item->uid}")  . '"  class="username">' . $item->name . '</a></li>';
+            }
+            $html .= '</ul>';
+            $block['subject'] = t('My Friends');
+            $block['content'] =  $html;
+        }
+      }
+      return $block;
+  }
+}
