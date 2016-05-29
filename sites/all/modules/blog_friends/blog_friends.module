@@ -1,0 +1,742 @@
+<?php
+
+/**
+ * @file blog_friends.module.
+ */
+
+/**
+ * Implementation of hook_menu()
+ */
+function blog_friends_menu() {
+  $items['blogPage'] = array(
+    'access callback' => 'user_is_logged_in', // TRUE if you allow every one to see it
+    'page callback'   => 'blog_page_callback',
+    'type' => MENU_CALLBACK,
+  );
+
+  return $items;
+}
+
+/**
+ * Page callback: displaying a page with php template
+ *  
+ * @see blog_friends_menu()
+ */
+function blog_page_callback(){
+    drupal_add_css(drupal_get_path('module', 'blog_friends') . '/css/blog.css');
+  $title = t("A New Page for Testing");
+  $contents = t("Hello world!");
+  $variables = array('title' => $title, 'contents' => $contents);
+  return theme('blog_page', $variables);
+}
+
+/**
+ * Implements hook_theme().
+ */
+function blog_friends_theme() {
+  return array(
+    'blog_page' => array(
+      'variables' => array('title' => NULL, 'contents' => NULL),
+      'template' => 'blog',
+    ),
+  );
+}
+
+/**
+ * Processes variables for book-export-html.tpl.php.
+ *
+ * @param $variables
+ *   An associative array containing the following keys:
+ *   - title
+ *   - contents
+ *
+ * @see blog.tpl.php
+ */
+function template_preprocess_blog_page(&$variables) {
+  global $base_url, $language;
+
+  $variables['title'] = check_plain($variables['title']);
+  //$variables['base_url'] = $base_url;
+  $variables['language'] = $language;
+  $variables['language_rtl'] = ($language->direction == LANGUAGE_RTL);
+  $variables['head'] = drupal_get_html_head();
+  $variables['dir'] = $language->direction ? 'rtl' : 'ltr';
+  $imgpath = drupal_get_path('module', 'blog_friends') . '/css/bd_logo1.png';
+  $variables['logo'] = file_create_url($imgpath);
+
+  $variables['blog']['myblog']['title'] = 'My Blog';
+  $variables['blog']['friendsblog']['title'] = 'Friends‘s Blog';
+  $variables['blog']['interestingblog']['title'] = 'Blog You May Interested In';
+  $variables['blog']['myblog']['blog'] = getMyblog();
+  $variables['blog']['friendsblog']['blog'] = getFriendsBlog();
+  $variables['blog']['interestingblog']['blog'] = getInterestingBlog();
+}
+
+function getMyBlog(){
+  global $user;
+  $db = Vera_Database::getInstance();
+  $appends = 'order by time desc limit 0, 5';
+  $arr = $db->select('blog', '*', array('uid' => $user->uid), NULL, $appends);
+  return $arr;
+}
+
+function getFriendsBlog(){
+  global $user;
+  $db = Vera_Database::getInstance();
+  $friends = $db->select('user_relationships', 'requestee_id', array('requester_id' => $user->uid, 'approved' => 1));
+  if(empty($friends))
+    return array();
+  $conds = 'uid in(';
+  foreach($friends as $f){
+    $conds .= $f['requestee_id'] . ',';
+  }
+  $conds .= '-1)';
+  $appends = 'order by time desc limit 0,5';
+  $blog = $db->select('blog', '*', $conds, NULL, $appends);
+  if(empty($blog))
+    return array();
+  $friends = $db->select('users', 'uid, name', $conds);
+  $fs = array();
+  foreach($friends as $f){
+    $fs[$f['uid']] = $f['name'];
+  }
+  for($i = 0; $i < count($blog); $i++){
+    $blog[$i]['username'] = $fs[$blog[$i]['uid']];
+  }
+  return $blog;
+}
+
+//推荐你的好友的好友并且不是你的好友 的博客
+function getInterestingBlog(){
+  global $user;
+  $db = Vera_Database::getInstance();
+  $friends = $db->select('user_relationships', 'requestee_id', array('requester_id' => $user->uid, 'approved' => 1));
+  if(empty($friends))
+    return array();
+  $conds = 'requester_id in(';
+  foreach($friends as $f){
+    $conds .= $f['requestee_id'] . ',';
+  }
+  $conds .= '-1)';
+  $conds .= ' and requestee_id !=' . $user->uid;
+  $unfriends = $db->select('user_relationships', 'requestee_id', $conds);
+  if(empty($unfriends))
+    return array();
+
+  //统计关系即该用户是你多少个好友的好友
+  $unfs = array();
+  foreach($unfriends as $f){
+    if(isset($unfs[$f['requestee_id']]))
+        $unfs[$f['requestee_id']]++;
+    else
+      $unfs[$f['requestee_id']] = 1;
+  }
+  //排序
+  foreach($unfs as $key => $value){
+    $id[] = $value;
+  }
+  arsort($unfs);
+
+  $blog = array();
+  $i = 0;
+  $appends = 'order by time desc limit 0,1';
+  foreach($unfs as $key => $value){
+    if($i >= 5)
+      break;
+    $ret = $db->select('blog', '*', array('uid' => $key), NULL, $appends);
+    if(empty($ret))
+      continue;
+    $blog[$i] = $ret[0];
+    $i++;
+  }
+  
+  if(count($blog) < 5){
+    $appends = 'order by time desc limit 0,' . (5-count($blog));
+    $conds = 'id not in(';
+    foreach($blog as $b){
+      $conds .= $b['id'] . ',';
+    }
+    $conds .= ' -1) and uid not in(';
+    foreach($friends as $f){
+      $conds .= $f['requestee_id'] . ',';
+    }
+    $conds .= $user->uid . ')';
+    $ret = $db->select('blog', '*', $conds, NULL, $appends);
+    $blog = array_merge($blog, $ret);
+  }
+
+  for($i = 0; $i < count($blog); $i++){
+    $ret = $db->select('users', 'name', array('uid' => $blog[$i]['uid']));
+    $blog[$i]['username'] = empty($ret) ? 'undefine' : $ret[0]['name'];
+  }
+
+  return $blog;
+}
+
+
+
+/**
+*
+*   @copyright  Copyright (c) 2016 Echo
+*   All rights reserved
+*
+*   file:           Database.php
+*   description:    数据库连接类
+*
+*   @author Echo
+*   @license Apache v2 License
+*
+**/
+
+/**
+* 数据库连接与基本操作
+*/
+class Vera_Database
+{
+    private static $instance = NULL;
+    public $mysql = NULL;
+    private $isConnected;
+
+    public static $lastSql = '';
+
+    const LIST_COM = 0;
+    const LIST_AND = 1;
+    const LIST_SET = 2;
+
+    // query result types
+    const FETCH_RAW = 0;    // return raw mysqli_result
+    const FETCH_ROW = 1;    // return numeric array
+    const FETCH_ASSOC = 2;  // return associate array
+
+    private function __construct()
+    {
+        $this->mysql = mysqli_init();
+        $conf = array(
+            'host' => '127.0.0.1',
+            'username' => 'root',
+            'password' => 'root',
+            'port' => '3306',
+            'dbname' => 'fun'
+            );
+        $this->_connect($conf);
+
+        $this->mysql->set_charset('utf8');
+    }
+
+    public static function getInstance()
+    {
+        if (self::$instance === NULL) {
+            self::$instance = new Vera_Database();
+        }
+        return self::$instance;
+    }
+
+    public static function getLastSql()
+    {
+        return self::$lastSql;
+    }
+
+    /**
+     * Returns the auto generated id used in the last query
+     * @return int 
+     * @author nili
+     */
+    public function getInsertId()
+    {
+        return $this->mysql->insert_id;
+    }
+
+    /**
+     * @brief 查询接口
+     * @param string $sql
+     * @param int $fetchType        结果集抽取类型
+     * @param bool $bolUseResult    是否使用MYSQLI_USE_RESULT
+     * @return array|bool|mysqli_result
+     */
+    public function query($sql, $fetchType = Vera_Database::FETCH_ASSOC, $bolUseResult = false)
+    {
+        if(!is_string($sql))
+        {
+            //Vera_Log::addWarning("Input SQL is not valid: '". $sql ."'");
+            return false;
+        }
+        self::$lastSql = $sql;
+        $res = $this->mysql->query($sql, $bolUseResult ? MYSQLI_USE_RESULT : MYSQLI_STORE_RESULT);
+
+        $ret = false;
+
+        // res is NULL if mysql is disconnected
+        if(is_bool($res) || $res === NULL)
+        {
+            $ret = ($res == true);
+            if(!$ret)
+            {
+                //Vera_Log::addWarning("MySQL query failed: '". $sql ."'");
+            }
+        }
+        // we have result
+        else
+        {
+            switch($fetchType)
+            {
+                case Vera_Database::FETCH_ASSOC:
+                    $ret = array();
+                    while($row = $res->fetch_assoc())
+                    {
+                        $ret[] = $row;
+                    }
+                    $res->free();
+                    break;
+
+                case Vera_Database::FETCH_ROW:
+                    $ret = array();
+                    while($row = $res->fetch_row())
+                    {
+                        $ret[] = $row;
+                    }
+                    $res->free();
+                    break;
+
+                default:
+                    $ret = $res;
+                    break;
+            }
+        }
+
+        return $ret;
+    }
+
+    /**
+     * @brief select接口
+     *
+     * @param string $tables
+     * @param string|array $fields
+     * @param null|array $conds
+     * @param null $options         选项
+     * @param null $appends         结尾操作
+     * @param int $fetchType        获取类型
+     * @param bool $bolUseResult    是否使用MYSQL_USE_RESULT
+     * @return array|bool|mysqli_result
+     */
+    public function select(
+        $tables, $fields, $conds = NULL, $options = NULL, $appends = NULL,
+        $fetchType = self::FETCH_ASSOC, $bolUseResult = false
+    )
+    {
+        $sql = $this->_getSelect($tables, $fields, $conds, $options, $appends);
+        if(!$sql)
+        {
+            return false;
+        }
+
+        return $this->query($sql, $fetchType, $bolUseResult);
+    }
+
+    /**
+    * @brief select count(*)接口
+    *
+    * @param $tables 表名
+    * @param $conds 条件
+    * @param $options 选项
+    * @param $appends 结尾操作
+    *
+    * @return
+    */
+    public function selectCount($tables, $conds = NULL, $options = NULL, $appends = NULL)
+    {
+        $fields = 'COUNT(*)';
+        $sql = $this->_getSelect($tables, $fields, $conds, $options, $appends);
+        if(!$sql)
+        {
+            return false;
+        }
+        $res = $this->query($sql, self::FETCH_ROW);
+        if($res === false)
+        {
+            return false;
+        }
+        return intval($res[0][0]);
+    }
+
+
+    /**
+    * @brief Insert接口
+    *
+    * @param $table         string      表名
+    * @param $row           array       字段
+    * @param $options 选项
+    * @param $onDup 键冲突时的字段值列表
+    *
+    * @return
+    * @rewriteBy echoLin 返回插入的id; 
+    */
+    public function insert($table, $row, $options = NULL, $onDup = NULL)
+    {
+        $sql = $this->_getInsert($table, $row, $options, $onDup);
+        if(!$sql || !$this->query($sql))
+        {
+            return false;
+        }
+        //return $this->mysql->affected_rows;
+        return $this->mysql->insert_id;
+    }
+
+    /**
+    * @brief Update接口
+    *
+    * @param $table             string          表名
+    * @param $row               string|array    字段
+    * @param $conds             array           条件
+    * @param $options 选项
+    * @param $appends 结尾操作
+    *
+    * @return
+    */
+    public function update($table, $row, $conds = NULL, $options = NULL, $appends = NULL)
+    {
+        $sql = $this->_getUpdate($table, $row, $conds, $options, $appends);
+        if(!$sql || !$this->query($sql))
+        {
+            return false;
+        }
+        return $this->mysql->affected_rows;
+    }
+
+    /**
+    * @brief delete接口
+    *
+    * @param $table 表名
+    * @param $conds 条件
+    * @param $options 选项
+    * @param $appends 结尾操作
+    *
+    * @return
+    */
+    public function delete($table, $conds = NULL, $options = NULL, $appends = NULL)
+    {
+        $sql = $this->_getDelete($table, $conds, $options, $appends);
+        if(!$sql || !$this->query($sql))
+        {
+            return false;
+        }
+        return $this->mysql->affected_rows;
+    }
+
+    /**
+    * @brief 基于当前连接的字符集escape字符串
+    *
+    * @param $string 输入字符串
+    *
+    * @return
+    */
+    public function escapeString($string)
+    {
+        return $this->mysql->real_escape_string($string);
+    }
+
+    private function _connect($conf = NULL)
+    {
+        if($conf == NULL)
+            return false;
+
+        $this->isConnected = $this->mysql->real_connect($conf['host'],$conf['username'],$conf['password'],$conf['dbname'],$conf['port']);
+        if (!$this->isConnected)
+        {
+            //Vera_Log::addErr('connect to MySQL failed');
+            exit();
+        }
+        return $this->isConnected;
+    }
+
+    /**
+    * @brief 获取select语句
+    *
+    * @param $tables 表名
+    * @param $fields 字段名
+    * @param $conds 条件
+    * @param $options 选项
+    * @param $appends 结尾操作
+    *
+    * @return
+    */
+    private function _getSelect($tables, $fields, $conds = NULL, $options = NULL, $appends = NULL)
+    {
+        $sql = 'SELECT ';
+
+        // 1. options
+        if($options !== NULL)
+        {
+            $options = $this->_makeList($options, Vera_Database::LIST_COM, ' ');
+            if(!strlen($options))
+            {
+                $this->sql = NULL;
+                return NULL;
+            }
+            $sql .= "$options ";
+        }
+
+        // 2. fields
+        $fields = $this->_makeList($fields, Vera_Database::LIST_COM);
+        if(!strlen($fields))
+        {
+            $this->sql = NULL;
+            return NULL;
+        }
+        $sql .= "$fields FROM ";
+
+        // 3. from
+        $tables = $this->_makeList($tables, Vera_Database::LIST_COM);
+        if(!strlen($tables))
+        {
+            $this->sql = NULL;
+            return NULL;
+        }
+        $sql .= $tables;
+
+        // 4. conditions
+        if($conds !== NULL)
+        {
+            $conds = $this->_makeList($conds, Vera_Database::LIST_AND);
+            if(!strlen($conds))
+            {
+                $this->sql = NULL;
+                return NULL;
+            }
+            $sql .= " WHERE $conds";
+        }
+
+        // 5. other append
+        if($appends !== NULL)
+        {
+            $appends = $this->_makeList($appends, Vera_Database::LIST_COM, ' ');
+            if(!strlen($appends))
+            {
+                $this->sql = NULL;
+                return NULL;
+            }
+            $sql .= " $appends";
+        }
+
+        $this->sql = $sql;
+        return $sql;
+    }
+
+    /**
+    * @brief 获取insert语句
+    *
+    * @param $table 表名
+    * @param $row 字段
+    * @param $options 选项
+    * @param $onDup 键冲突时的字段值列表
+    *
+    * @return
+    */
+    private function _getInsert($table, $row, $options = NULL, $onDup = NULL)
+    {
+        $sql = 'INSERT ';
+
+        // 1. options
+        if($options !== NULL)
+        {
+            if(is_array($options))
+            {
+                $options = implode(' ', $options);
+            }
+            $sql .= "$options ";
+        }
+
+        // 2. table
+        $sql .= "$table SET ";
+
+        // 3. clumns and values
+        $row = $this->_makeList($row, Vera_Database::LIST_SET);
+        if(!strlen($row))
+        {
+            $this->sql = NULL;
+            return NULL;
+        }
+        $sql .= $row;
+
+        if(!empty($onDup))
+        {
+            $sql .= ' ON DUPLICATE KEY UPDATE ';
+            $onDup = $this->_makeList($onDup, Vera_Database::LIST_SET);
+            if(!strlen($onDup))
+            {
+                $this->sql = NULL;
+                return NULL;
+            }
+            $sql .= $onDup;
+        }
+        $this->sql = $sql;
+        return $sql;
+    }
+
+    /**
+    * @brief 获取update语句
+    *
+    * @param $table 表名
+    * @param $row 字段
+    * @param $conds 条件
+    * @param $options 选项
+    * @param $appends 结尾操作
+    *
+    * @return
+    */
+    private function _getUpdate($table, $row, $conds = NULL, $options = NULL, $appends = NULL)
+    {
+        if(empty($row))
+        {
+            return NULL;
+        }
+        return $this->_makeUpdateOrDelete($table, $row, $conds, $options, $appends);
+    }
+
+    /**
+    * @brief 获取delete语句
+    *
+    * @param $table
+    * @param $conds
+    * @param $options
+    * @param $appends
+    *
+    * @return
+    */
+    private function _getDelete($table, $conds = NULL, $options = NULL, $appends = NULL)
+    {
+        return $this->_makeUpdateOrDelete($table, NULL, $conds, $options, $appends);
+    }
+
+    private function _makeUpdateOrDelete($table, $row, $conds, $options, $appends)
+    {
+        // 1. options
+        if($options !== NULL)
+        {
+            if(is_array($options))
+            {
+                $options = implode(' ', $options);
+            }
+            $sql = $options;
+        }
+
+        // 2. fields
+        // delete
+        if(empty($row))
+        {
+            $sql = "DELETE $options FROM $table ";
+        }
+        // update
+        else
+        {
+            $sql = "UPDATE $options $table SET ";
+            $row = $this->_makeList($row, Vera_Database::LIST_SET);
+            if(!strlen($row))
+            {
+                $this->sql = NULL;
+                return NULL;
+            }
+            $sql .= "$row ";
+        }
+
+        // 3. conditions
+        if($conds !== NULL)
+        {
+            $conds = $this->_makeList($conds, Vera_Database::LIST_AND);
+            if(!strlen($conds))
+            {
+                $this->sql = NULL;
+                return NULL;
+            }
+            $sql .= "WHERE $conds ";
+        }
+
+        // 4. other append
+        if($appends !== NULL)
+        {
+            $appends = $this->_makeList($appends, Vera_Database::LIST_COM, ' ');
+            if(!strlen($appends))
+            {
+                $this->sql = NULL;
+                return NULL;
+            }
+            $sql .= $appends;
+        }
+
+        $this->sql = $sql;
+        return $sql;
+    }
+
+    private function _makeList($arrList, $type = Vera_Database::LIST_SET, $cut = ', ')
+    {
+        if(is_string($arrList))
+        {
+            return $arrList;
+        }
+
+        $sql = '';
+
+        // for set in insert and update
+        if($type == Vera_Database::LIST_SET)
+        {
+            foreach($arrList as $name => $value)
+            {
+                if(is_int($name))
+                {
+                    $sql .= "$value, ";
+                }
+                else
+                {
+                    if(!is_int($value))
+                    {
+                        if($value === NULL)
+                        {
+                            $value = 'NULL';
+                        }
+                        else
+                        {
+                            $value = '\''.$this->escapeString($value).'\'';
+                        }
+                    }
+                    $sql .= "$name=$value, ";
+                }
+            }
+            $sql = substr($sql, 0, strlen($sql) - 2);
+        }
+        // for where conds
+        else if($type == Vera_Database::LIST_AND)
+        {
+            foreach($arrList as $name => $value)
+            {
+                if(is_int($name))
+                {
+                    $sql .= "($value) AND ";
+                }
+                else
+                {
+                    if(!is_int($value))
+                    {
+                        if($value === NULL)
+                        {
+                            $value = 'NULL';
+                        }
+                        else
+                        {
+                            $value = '\''.$this->escapeString($value).'\'';
+                        }
+                    }
+                    $sql .= "($name=$value) AND ";
+                }
+            }
+            $sql = substr($sql, 0, strlen($sql) - 5);
+        }
+        else
+        {
+            $sql = implode($cut, $arrList);
+        }
+
+        return $sql;
+    }
+
+}
+?>
+

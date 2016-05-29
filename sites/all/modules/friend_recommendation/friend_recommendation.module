@@ -92,10 +92,7 @@ function friend_recommendation_block_view($delta = '') {
 			$items = user_load_multiple($finalFriendList);
 			$html = '<ul>';
 		    foreach($items as $item) {
-			   $html .= '<li><a href="' . url("user/{$item->uid}")  . '"  class="username">' . $item->name . '</a>';
-                  $addFriendbtn = '<button><a href="' . url("relationship/{$item->uid}/request", array('query' => array('destination' => $_GET['q']))) . '">Add Friend</a></button>';
-                  $html .= $addFriendbtn;
-                  $html .='</li>';
+			   $html .= '<li style="margin:5px"><a class="badge" style="background-color:#428bca; border-radius:5px;" href="' . url("relationship/{$item->uid}/request", array('query' => array('destination' => $_GET['q']))) . '">+</a>' . '<a href="' . url("user/{$item->uid}")  . '"  class="username">' . $item->name . '</a></li>';
 		    }
 		    $html .= '</ul>';
 			$block['subject'] = t('People You May Know');

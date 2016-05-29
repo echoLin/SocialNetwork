@@ -1,0 +1,66 @@
+<?php
+
+/**
+ * @file createAPageWithTemplate.module.
+ */
+
+/**
+ * Implementation of hook_menu()
+ */
+function createAPageWithTemplate_menu() {
+	$items['aNewPage'] = array(
+		'access callback' => 'user_is_logged_in', // TRUE if you allow every one to see it
+	 	'page callback' 	=> 'a_new_page_callback',
+		'type' => MENU_CALLBACK,
+	);
+
+	return $items;
+}
+
+/**
+ * Page callback: displaying a page with php template
+ *  
+ * @see createAPageWithTemplate_menu()
+ */
+function a_new_page_callback(){
+    drupal_add_css(drupal_get_path('module', 'createAPageWithTemplate') . '/css/anewpage.css');
+	$title = t("A New Page for Testing");
+	$contents = t("Hello world!");
+	$variables = array('title' => $title, 'contents' => $contents);
+	return theme('a_testing_page', $variables);
+}
+
+/**
+ * Implements hook_theme().
+ */
+function createAPageWithTemplate_theme() {
+  return array(
+    'a_testing_page' => array(
+      'variables' => array('title' => NULL, 'contents' => NULL),
+      'template' => 'a-testing-page',
+    ),
+  );
+}
+
+/**
+ * Processes variables for book-export-html.tpl.php.
+ *
+ * @param $variables
+ *   An associative array containing the following keys:
+ *   - title
+ *   - contents
+ *
+ * @see a-testing-page.tpl.php
+ */
+function template_preprocess_a_testing_page(&$variables) {
+  global $base_url, $language;
+
+  $variables['title'] = check_plain($variables['title']);
+  $variables['base_url'] = $base_url;
+  $variables['language'] = $language;
+  $variables['language_rtl'] = ($language->direction == LANGUAGE_RTL);
+  $variables['head'] = drupal_get_html_head();
+  $variables['dir'] = $language->direction ? 'rtl' : 'ltr';
+  $imgpath = drupal_get_path('module', 'createAPageWithTemplate') . '/css/bd_logo1.png';
+  $variables['logo'] = file_create_url($imgpath);
+}

@@ -85,6 +85,14 @@
  * @see html.tpl.php
  */
 ?>
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
+<script src="http://libs.baidu.com/jquery/1.9.0/jquery.js"></script>
+<script src="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script> 
+</head>
+</head>
 <div id="page-wrapper"><div id="page">
 
   <div id="header" class="<?php print $secondary_menu ? 'with-secondary-menu': 'without-secondary-menu'; ?>"><div class="section clearfix">
@@ -183,14 +191,12 @@
       </div></div> <!-- /.section, /#sidebar-first -->
     <?php endif; ?>
 
-    <div id="content" class="column"><div class="section">
+    <div id="content" class="column">
+    <div class="section">
       <?php if ($page['highlighted']): ?><div id="highlighted"><?php print render($page['highlighted']); ?></div><?php endif; ?>
       <a id="main-content"></a>
       <?php print render($title_prefix); ?>
       <?php if ($title): ?>
-        <h1 class="title" id="page-title">
-          <?php print $title; ?>
-        </h1>
       <?php endif; ?>
       <?php print render($title_suffix); ?>
       <?php if ($tabs): ?>
@@ -198,6 +204,159 @@
           <?php print render($tabs); ?>
         </div>
       <?php endif; ?>
+
+      <!-- ************** fun ******************** -->
+      <!-- <ul id="myTab" class="nav nav-tabs"> 
+        <li class="active"><a href="#home" data-toggle="tab"><?php print render($blog['myblog']['title']);?></a></li>
+        <li><a href="#secondColumn" data-toggle="tab">My friends' blogs</a></li>
+        <li><a href="#thirdColumn" data-toggle="tab">Blogs you may interst in</a></li>
+      </ul>
+     <div id="myTabContent" class="tab-content">
+      <div class="tab-pane fade in active" id="home">
+       <div class="table-responsive">
+         <table class="table">
+           <tbody>
+            <tr>
+              <td width=100% style="padding: 0px">
+                <div class="panel panel-warning" style="margin:0px">
+                 <div class="panel-heading">publisher</div>
+                 <div class="panel-body">my first friend's blog.</div>
+                 <div class="panel-footer" style="text-align:right">2016.5.29</div>
+                </div> 
+              </td>
+            </tr>      
+           </tbody>
+         </table>
+       </div>
+        <div class="table-responsive">
+         <table class="table">
+           <tbody>
+            <tr>
+              <td width=100% style="padding: 0px">
+                <div class="panel panel-warning" style="margin:0px">
+                 <div class="panel-heading">publisher</div>
+                 <div class="panel-body">my first friend's blog.</div>
+                 <div class="panel-footer" style="text-align:right">2016.5.29</div>
+                </div> 
+              </td>
+            </tr>      
+           </tbody>
+         </table>
+       </div>
+        <div class="table-responsive">
+         <table class="table">
+           <tbody>
+            <tr>
+              <td width=100% style="padding: 0px">
+                <div class="panel panel-warning" style="margin:0px">
+                 <div class="panel-heading">publisher</div>
+                 <div class="panel-body">my first friend's blog.</div>
+                 <div class="panel-footer" style="text-align:right">2016.5.29</div>
+                </div> 
+              </td>
+            </tr>      
+           </tbody>
+         </table>
+       </div>
+      </div>   
+ 
+   <div class="tab-pane fade" id="secondColumn">
+      <div class="table-responsive">
+         <table class="table">
+           <tbody>
+            <tr>
+              <td width=100% style="padding: 0px">
+                <div class="panel panel-warning" style="margin:0px">
+                 <div class="panel-heading">publisher</div>
+                 <div class="panel-body">my first friend's blog.</div>
+                 <div class="panel-footer" style="text-align:right">2016.5.29</div>
+                </div> 
+              </td>
+            </tr>      
+           </tbody>
+         </table>
+       </div>
+        <div class="table-responsive">
+         <table class="table">
+           <tbody>
+            <tr>
+              <td width=100% style="padding: 0px">
+                <div class="panel panel-warning" style="margin:0px">
+                 <div class="panel-heading">publisher</div>
+                 <div class="panel-body">my first friend's blog.</div>
+                 <div class="panel-footer" style="text-align:right">2016.5.29</div>
+                </div> 
+              </td>
+            </tr>      
+           </tbody>
+         </table>
+       </div>
+        <div class="table-responsive">
+         <table class="table">
+           <tbody>
+            <tr>
+              <td width=100% style="padding: 0px">
+                <div class="panel panel-warning" style="margin:0px">
+                 <div class="panel-heading">publisher</div>
+                 <div class="panel-body">my first friend's blog.</div>
+                 <div class="panel-footer" style="text-align:right">2016.5.29</div>
+                </div> 
+              </td>
+            </tr>      
+           </tbody>
+         </table>
+       </div>
+   </div>
+   <div class="tab-pane fade" id="thirdColumn">
+     <div class="table-responsive">
+         <table class="table">
+           <tbody>
+            <tr>
+              <td width=100% style="padding: 0px">
+                <div class="panel panel-warning" style="margin:0px">
+                 <div class="panel-heading">publisher</div>
+                 <div class="panel-body">my first friend's blog.</div>
+                 <div class="panel-footer" style="text-align:right">2016.5.29</div>
+                </div> 
+              </td>
+            </tr>      
+           </tbody>
+         </table>
+       </div>
+        <div class="table-responsive">
+         <table class="table">
+           <tbody>
+            <tr>
+              <td width=100% style="padding: 0px">
+                <div class="panel panel-warning" style="margin:0px">
+                 <div class="panel-heading">publisher</div>
+                 <div class="panel-body">my first friend's blog.</div>
+                 <div class="panel-footer" style="text-align:right">2016.5.29</div>
+                </div> 
+              </td>
+            </tr>      
+           </tbody>
+         </table>
+       </div>
+        <div class="table-responsive">
+         <table class="table">
+           <tbody>
+            <tr>
+              <td width=100% style="padding: 0px">
+                <div class="panel panel-warning" style="margin:0px">
+                 <div class="panel-heading">publisher</div>
+                 <div class="panel-body">my first friend's blog.</div>
+                 <div class="panel-footer" style="text-align:right">2016.5.29</div>
+                </div> 
+              </td>
+            </tr>      
+           </tbody>
+         </table>
+       </div>
+   </div>
+  </div>
+-->
+     
       <?php print render($page['help']); ?>
       <?php if ($action_links): ?>
         <ul class="action-links">
@@ -211,7 +370,21 @@
 
     <?php if ($page['sidebar_second']): ?>
       <div id="sidebar-second" class="column sidebar"><div class="section">
-        <?php print render($page['sidebar_second']); ?>
+        <!-- <div class="list-group" style="margin-top: 60px;">
+         <a href="##" class="list-group-item active">My friends</a>
+         <a href="##" class="list-group-item list-group-item-warning">aaa</a>
+	       <a href="##" class="list-group-item list-group-item-warning">aaa</a>
+	       <a href="##" class="list-group-item list-group-item-warning">aaa</a>
+	       <a href="##" class="list-group-item list-group-item-warning">aaa</a>
+        </div>
+        <div class="list-group" style="margin-top: 10px;margin-bottom:0px;">
+         <a href="##" class="list-group-item active">People you may know</a>
+         <a href="##" class="list-group-item list-group-item-success">aaa</a>
+         <a href="##" class="list-group-item list-group-item-success">aaa</a>
+         <a href="##" class="list-group-item list-group-item-success">aaa</a>
+         <a href="##" class="list-group-item list-group-item-success">aaa</a>
+        </div> -->
+       <?php print render($page['sidebar_second']); ?>
       </div></div> <!-- /.section, /#sidebar-second -->
     <?php endif; ?>
 

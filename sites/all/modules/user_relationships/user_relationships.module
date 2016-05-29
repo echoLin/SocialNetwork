@@ -278,7 +278,6 @@ function _user_relationships_generate_query($param = array(), $options = array()
       ->extend('TableSort')
       ->orderByHeader($header);
   }
-  //var_dump($query);
   return $query;
 }
 
@@ -310,7 +309,6 @@ function user_relationships_permission() {
       'description' => t('The user may delete current relationships of this type.'),
     );
   }
-  //var_dump('permissions');
   return $permissions;
 }
 
@@ -387,7 +385,6 @@ function user_relationships_activity_info() {
   foreach (user_relationships_types_load() as $type_obj) {
     $info->realms["user_relationships_" . $type_obj->rtid] = $type_obj->plural_name;
   }
-  //var_dump($info);
   return $info;
 }
 

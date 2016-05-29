@@ -1,0 +1,9 @@
+name = Blog
+description = Provide general page and template example.
+
+core = 7.x
+version = 7.x-20121210
+author = echoLin
+
+package = Example
+project = Example
